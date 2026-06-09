@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart2,
-  Globe, Users, Network, LogOut, Store,
+  Globe, Users, Network, LogOut, Store, FileText,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { ActiveView } from '../types';

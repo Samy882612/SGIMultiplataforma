@@ -3,14 +3,13 @@ import { LogIn } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Login() {
-  const { users, authenticate, addUser, setCurrentUser, setActiveView, currentUser } = useApp();
+  const { users, authenticate, addUser, login, setActiveView, currentUser } = useApp();
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'employee'>('employee');
   const [error, setError] = useState('');
-  const hasAdmin = users.some(u => u.role === 'admin');
 
   const resetForm = () => {
     setName('');
@@ -20,13 +19,13 @@ export default function Login() {
     setError('');
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!email.trim() || !password.trim()) {
       setError('Ingresa correo y contraseña.');
       return;
     }
 
-    const authenticated = await authenticate(email.trim(), password);
+    const authenticated = authenticate(email.trim(), password);
     if (!authenticated) {
       setError('Usuario no registrado o contraseña incorrecta.');
       return;
@@ -36,7 +35,7 @@ export default function Login() {
     setActiveView('dashboard');
   };
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Completa todos los campos para registrarte.');
       return;
@@ -48,22 +47,17 @@ export default function Login() {
       return;
     }
 
-    try {
-      const registered = await addUser({
-        name: name.trim(),
-        email: email.trim(),
-        password,
-        role: hasAdmin ? 'employee' : role,
-        active: true,
-      });
+    const registered = addUser({
+      name: name.trim(),
+      email: email.trim(),
+      password,
+      role,
+      active: true,
+    });
 
-      setCurrentUser(registered);
-      setError('');
-      setActiveView('dashboard');
-    } catch (error) {
-      console.error(error);
-      setError('No se pudo crear la cuenta. Intenta de nuevo.');
-    }
+    login(registered.id);
+    setError('');
+    setActiveView('dashboard');
   };
 
   if (currentUser.id !== 'guest') {
@@ -117,20 +111,6 @@ export default function Login() {
               />
             </div>
           )}
-          {isRegisterMode && !hasAdmin && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-600 mb-2">Rol</label>
-              <select
-                className="input-field w-full"
-                value={role}
-                onChange={event => setRole(event.target.value as 'admin' | 'employee')}
-              >
-                <option value="employee">Empleado</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-2">No existe administrador aún, puedes crear la primera cuenta admin.</p>
-            </div>
-          )}
 
           <div>
             <label className="block text-sm font-semibold text-slate-600 mb-2">Correo electrónico</label>
@@ -153,6 +133,19 @@ export default function Login() {
             />
           </div>
 
+          {isRegisterMode && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-600 mb-2">Rol</label>
+              <select
+                className="input-field w-full"
+                value={role}
+                onChange={event => setRole(event.target.value as 'admin' | 'employee')}
+              >
+                <option value="employee">Empleado</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          )}
 
           <button
             onClick={isRegisterMode ? handleRegister : handleLogin}

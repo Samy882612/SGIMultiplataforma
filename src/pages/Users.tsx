@@ -6,7 +6,7 @@ import type { User } from '../types';
 const emptyUser: Omit<User, 'id' | 'createdAt'> = { name: '', email: '', password: '', role: 'employee', active: true };
 
 export default function Users() {
-  const { users, createUser, updateUser, deleteUser, currentUser } = useApp();
+  const { users, setUsers, currentUser } = useApp();
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<User | null>(null);
   const [form, setForm] = useState<Omit<User, 'id' | 'createdAt'>>(emptyUser);
@@ -14,39 +14,23 @@ export default function Users() {
   const openAdd = () => { setForm(emptyUser); setModal('add'); };
   const openEdit = (u: User) => { setSelected(u); setForm({ name: u.name, email: u.email, password: u.password, role: u.role, active: u.active }); setModal('edit'); };
 
-  const handleSave = async () => {
-    try {
-      if (modal === 'add') {
-        await createUser(form);
-      } else if (modal === 'edit' && selected) {
-        await updateUser(selected.id, form);
-      }
-      setModal(null);
-    } catch (error) {
-      console.error(error);
-      alert('No se pudo guardar el usuario.');
+  const handleSave = () => {
+    if (modal === 'add') {
+      const id = `U${String(users.length + 1).padStart(3, '0')}`;
+      setUsers(prev => [...prev, { id, ...form, createdAt: new Date().toISOString().split('T')[0] }]);
+    } else if (modal === 'edit' && selected) {
+      setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, ...form } : u));
     }
+    setModal(null);
   };
 
-  const toggleActive = async (id: string) => {
-    const user = users.find(u => u.id === id);
-    if (!user) return;
-    try {
-      await updateUser(id, { ...user, active: !user.active });
-    } catch (error) {
-      console.error(error);
-      alert('No se pudo cambiar el estado del usuario.');
-    }
+  const toggleActive = (id: string) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, active: !u.active } : u));
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (id === currentUser.id) return;
-    try {
-      await deleteUser(id);
-    } catch (error) {
-      console.error(error);
-      alert('No se pudo eliminar el usuario.');
-    }
+    setUsers(prev => prev.filter(u => u.id !== id));
   };
 
   return (
@@ -66,12 +50,10 @@ export default function Users() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex justify-between items-center">
         <h3 className="font-semibold text-slate-800">Lista de Usuarios</h3>
-        {currentUser.role === 'admin' ? (
+        {currentUser.role === 'admin' && (
           <button onClick={openAdd} className="btn-primary"><Plus size={18} />Nuevo Usuario</button>
-        ) : (
-          <p className="text-sm text-slate-500">Solo los administradores pueden crear, editar y eliminar usuarios.</p>
         )}
       </div>
 
@@ -190,18 +172,6 @@ export default function Users() {
                   <option value="employee">Empleado</option>
                   <option value="admin">Administrador</option>
                 </select>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  id="activeToggle"
-                  type="checkbox"
-                  checked={form.active}
-                  onChange={e => setForm(prev => ({ ...prev, active: e.target.checked }))}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="activeToggle" className="text-sm font-medium text-slate-700">
-                  {form.active ? 'Activo' : 'Inactivo'}
-                </label>
               </div>
             </div>
             <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-100">
