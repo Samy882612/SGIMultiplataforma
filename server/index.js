@@ -22,10 +22,11 @@ if (fs.existsSync(distPath)) {
 }
 
 const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || "localhost",
-  user: process.env.MYSQL_USER || "root",
-  password: process.env.MYSQL_PASSWORD || "",
-  database: process.env.MYSQL_DATABASE || "sapposstore",
+  host: process.env.MYSQL_HOST || process.env.MYSQLHOST || "localhost",
+  port: process.env.MYSQL_PORT ? Number(process.env.MYSQL_PORT) : 3306,
+  user: process.env.MYSQL_USER || process.env.MYSQLUSER || "root",
+  password: process.env.MYSQL_PASSWORD || process.env.MYSQLPASSWORD || "",
+  database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || "sapposstore",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
