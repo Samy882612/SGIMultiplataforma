@@ -77,80 +77,102 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => setCurrentUser(guestUser);
 
   const createProduct = async (product: Omit<Product, 'id'>) => {
-    const id = `P${String(products.length + 1).padStart(3, '0')}`;
-    const newProduct: Product = { id, ...product };
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product),
+    });
+    if (!res.ok) throw new Error('Failed to create product');
+    const newProduct: Product = await res.json();
     setProducts(prev => [...prev, newProduct]);
     return newProduct;
   };
 
   const updateProduct = async (id: string, product: Omit<Product, 'id'>) => {
-    let updatedProduct: Product | null = null;
-    setProducts(prev => prev.map(p => {
-      if (p.id === id) {
-        updatedProduct = { ...p, ...product };
-        return updatedProduct;
-      }
-      return p;
-    }));
-    return updatedProduct ?? { id, ...product };
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product),
+    });
+    if (!res.ok) throw new Error('Failed to update product');
+    const updatedProduct: Product = await res.json();
+    setProducts(prev => prev.map(p => p.id === id ? updatedProduct : p));
+    return updatedProduct;
   };
 
   const deleteProduct = async (id: string) => {
+    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete product');
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   const createSale = async (sale: { platform: Sale['platform']; products: Sale['products']; employeeId: string }) => {
-    const id = `S${String(sales.length + 1).padStart(3, '0')}`;
-    const receiptNumber = `RCPT-${String(sales.length + 1).padStart(4, '0')}`;
-    const date = new Date().toISOString().split('T')[0];
-    const total = sale.products.reduce((acc, item) => acc + item.subtotal, 0);
-    const newSale: Sale = {
-      id,
-      date,
-      platform: sale.platform,
-      products: sale.products,
-      total,
-      status: 'completed',
-      receiptNumber,
-      employeeId: sale.employeeId,
-    };
+    const res = await fetch('/api/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sale),
+    });
+    if (!res.ok) throw new Error('Failed to create sale');
+    const newSale: Sale = await res.json();
     setSales(prev => [...prev, newSale]);
     return newSale;
   };
 
   const createInvoice = async (invoice: Invoice) => {
-    setInvoices(prev => [...prev, invoice]);
-    return invoice;
+    const res = await fetch('/api/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(invoice),
+    });
+    if (!res.ok) throw new Error('Failed to create invoice');
+    const newInvoice: Invoice = await res.json();
+    setInvoices(prev => [...prev, newInvoice]);
+    return newInvoice;
   };
 
   const updateInvoiceStatus = async (id: string, status: Invoice['status']) => {
+    const res = await fetch(`/api/invoices/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update invoice');
     setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status } : inv));
   };
 
   const deleteInvoice = async (id: string) => {
+    const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete invoice');
     setInvoices(prev => prev.filter(inv => inv.id !== id));
   };
 
   const createTaxRate = async (rate: Omit<TaxRate, 'id' | 'active'>) => {
-    const id = `T${String(taxRates.length + 1).padStart(3, '0')}`;
-    const newRate: TaxRate = { id, active: true, ...rate };
+    const res = await fetch('/api/tax-rates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rate),
+    });
+    if (!res.ok) throw new Error('Failed to create tax rate');
+    const newRate: TaxRate = await res.json();
     setTaxRates(prev => [...prev, newRate]);
     return newRate;
   };
 
   const updateTaxRate = async (id: string, rate: Omit<TaxRate, 'id' | 'active'>) => {
-    let updatedRate: TaxRate | null = null;
-    setTaxRates(prev => prev.map(t => {
-      if (t.id === id) {
-        updatedRate = { ...t, ...rate };
-        return updatedRate;
-      }
-      return t;
-    }));
-    return updatedRate ?? { id, active: true, ...rate };
+    const res = await fetch(`/api/tax-rates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rate),
+    });
+    if (!res.ok) throw new Error('Failed to update tax rate');
+    const updatedRate: TaxRate = await res.json();
+    setTaxRates(prev => prev.map(t => t.id === id ? updatedRate : t));
+    return updatedRate;
   };
 
   const toggleTaxRate = async (id: string) => {
+    const res = await fetch(`/api/tax-rates/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to toggle tax rate');
     setTaxRates(prev => prev.map(t => t.id === id ? { ...t, active: !t.active } : t));
   };
 
