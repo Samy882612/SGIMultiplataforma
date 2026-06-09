@@ -245,7 +245,7 @@ app.get("/api/products", async (req, res) => {
   try {
     if (!dbAvailable) return res.json([]);
     const [rows] = await pool.query(
-      'SELECT p.id_producto, p.nombre, p.descripcion, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria'
+      'SELECT p.id_producto, p.nombre, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria'
     );
 
     const products = rows.map(row => ({
@@ -530,8 +530,8 @@ app.post('/api/products', async (req, res) => {
     const { name, cost, price, quantity, category, sku, minStock } = req.body;
     const categoryId = await getCategoryId(category);
     const [result] = await pool.query(
-      'INSERT INTO productos (nombre, descripcion, precio_compra, precio_venta, stock, stock_minimo, id_categoria, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
-      [name, '', cost, price, quantity, minStock, categoryId]
+      'INSERT INTO productos (nombre, precio_compra, precio_venta, stock, stock_minimo, id_categoria, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+      [name, cost, price, quantity, minStock, categoryId]
     );
     const [rows] = await pool.query(
       'SELECT p.id_producto, p.nombre, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria WHERE p.id_producto = ?',
@@ -561,8 +561,8 @@ app.put('/api/products/:id', async (req, res) => {
     const { name, cost, price, quantity, category, sku, minStock } = req.body;
     const categoryId = await getCategoryId(category);
     await pool.query(
-      'UPDATE productos SET nombre = ?, descripcion = ?, precio_compra = ?, precio_venta = ?, stock = ?, stock_minimo = ?, id_categoria = ? WHERE id_producto = ?',
-      [name, '', cost, price, quantity, minStock, categoryId, productId]
+      'UPDATE productos SET nombre = ?, precio_compra = ?, precio_venta = ?, stock = ?, stock_minimo = ?, id_categoria = ? WHERE id_producto = ?',
+      [name, cost, price, quantity, minStock, categoryId, productId]
     );
     const [rows] = await pool.query(
       'SELECT p.id_producto, p.nombre, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria WHERE p.id_producto = ?',
