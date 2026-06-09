@@ -530,7 +530,7 @@ app.post('/api/products', async (req, res) => {
     const { name, cost, price, quantity, category, sku, minStock } = req.body;
     const categoryId = await getCategoryId(category);
     const [result] = await pool.query(
-      'INSERT INTO productos (nombre, `descripcion TEXT,`, precio_compra, precio_venta, stock, stock_minimo, id_categoria, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+      'INSERT INTO productos (nombre, descripcion, precio_compra, precio_venta, stock, stock_minimo, id_categoria, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
       [name, '', cost, price, quantity, minStock, categoryId]
     );
     const [rows] = await pool.query(
@@ -561,7 +561,7 @@ app.put('/api/products/:id', async (req, res) => {
     const { name, cost, price, quantity, category, sku, minStock } = req.body;
     const categoryId = await getCategoryId(category);
     await pool.query(
-      'UPDATE productos SET nombre = ?, `descripcion TEXT,` = ?, precio_compra = ?, precio_venta = ?, stock = ?, stock_minimo = ?, id_categoria = ? WHERE id_producto = ?',
+      'UPDATE productos SET nombre = ?, descripcion = ?, precio_compra = ?, precio_venta = ?, stock = ?, stock_minimo = ?, id_categoria = ? WHERE id_producto = ?',
       [name, '', cost, price, quantity, minStock, categoryId, productId]
     );
     const [rows] = await pool.query(
