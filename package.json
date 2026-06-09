@@ -8,7 +8,9 @@
     "server": "node server/index.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm run build-start",
+    "build-start": "npm run build && npm run server"
   },
   "dependencies": {
     "cors": "^2.8.5",

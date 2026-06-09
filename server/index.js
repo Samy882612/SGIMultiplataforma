@@ -2,12 +2,24 @@
 import mysql from "mysql2/promise";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the frontend build
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
 
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || "localhost",
@@ -948,6 +960,16 @@ const initServer = async () => {
     console.error('No se pudo inicializar la tabla de plataformas. Usando fallback local.', error);
     dbAvailable = false;
   }
+
+  // Serve index.html for SPA routes
+  app.get('*', (req, res) => {
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).json({ error: 'Not found' });
+    }
+  });
 
   const port = Number(process.env.PORT || 4000);
   app.listen(port, () => {
