@@ -245,7 +245,7 @@ app.get("/api/products", async (req, res) => {
   try {
     if (!dbAvailable) return res.json([]);
     const [rows] = await pool.query(
-      'SELECT p.id_producto, p.nombre, p.`descripcion TEXT,` AS descripcion, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria'
+      'SELECT p.id_producto, p.nombre, p.descripcion, p.precio_compra, p.precio_venta, p.stock, p.stock_minimo, c.nombre AS categoria FROM productos p LEFT JOIN categoria c ON p.id_categoria = c.id_categoria'
     );
 
     const products = rows.map(row => ({
