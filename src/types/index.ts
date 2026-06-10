@@ -94,5 +94,4 @@ export type ActiveView =
   | 'platforms'
   | 'users'
   | 'billing'
-  | 'architecture'
   | 'login';

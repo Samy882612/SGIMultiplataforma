@@ -589,10 +589,31 @@ app.delete('/api/products/:id', async (req, res) => {
   try {
     const productId = parseId(req.params.id, 'P');
     if (!productId) return res.status(400).json({ error: 'Producto inválido' });
-    await pool.query('DELETE FROM productos WHERE id_producto = ?', [productId]);
+
+    const [[{ count }]] = await pool.query(
+      'SELECT COUNT(*) AS count FROM detalle_venta WHERE id_producto = ?',
+      [productId]
+    );
+
+    if (count > 0) {
+      return res.status(409).json({
+        error: 'No se puede eliminar el producto porque está referenciado en ventas.',
+      });
+    }
+
+    const [result] = await pool.query('DELETE FROM productos WHERE id_producto = ?', [productId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
     res.status(204).send();
   } catch (error) {
     console.error(error);
+    if (error?.code === 'ER_ROW_IS_REFERENCED_2' || error?.errno === 1451) {
+      return res.status(409).json({
+        error: 'No se puede eliminar el producto porque está referenciado en ventas.',
+      });
+    }
     res.status(500).json({ error: 'Error al eliminar producto' });
   }
 });
@@ -956,9 +977,73 @@ app.patch('/api/tax-rates/:id/active', async (req, res) => {
 
 const initServer = async () => {
   try {
+    // Crear tablas necesarias si no existen
+    if (dbAvailable) {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS categoria (
+          id_categoria INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          nombre VARCHAR(100) NOT NULL,
+          descripcion VARCHAR(255) NULL DEFAULT NULL
+        )
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS rol (
+          id_rol INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          nombre VARCHAR(50) NOT NULL,
+          descripcion VARCHAR(255) NULL DEFAULT NULL
+        )
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS productos (
+          id_producto INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          nombre VARCHAR(255) NOT NULL,
+          precio_compra DECIMAL(10,2) NULL DEFAULT NULL,
+          precio_venta DECIMAL(10,2) NULL DEFAULT NULL,
+          stock INT NULL DEFAULT 0,
+          stock_minimo INT NULL DEFAULT 10,
+          id_categoria INT NULL DEFAULT NULL,
+          fecha_registro TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+          KEY id_categoria_idx (id_categoria ASC)
+        )
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id_usuarios INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          nombre VARCHAR(100) NOT NULL,
+          email VARCHAR(100) NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          \`id-rol\` INT NULL DEFAULT NULL,
+          estado TINYINT NULL DEFAULT 1,
+          fecha_creacion TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE INDEX email_UNIQUE (email ASC),
+          KEY id_rol_idx (\`id-rol\` ASC)
+        )
+      `);
+
+      // Insertar roles por defecto si no existen
+      const [roles] = await pool.query('SELECT id_rol FROM rol LIMIT 1');
+      if (roles.length === 0) {
+        await pool.query('INSERT INTO rol (nombre) VALUES (?)', ['admin']);
+        await pool.query('INSERT INTO rol (nombre) VALUES (?)', ['employee']);
+      }
+
+      // Insertar usuario admin por defecto si no existe
+      const [admins] = await pool.query('SELECT * FROM usuarios WHERE email = ?', ['admin@sapposstore.com']);
+      if (admins.length === 0) {
+        const [adminRole] = await pool.query('SELECT id_rol FROM rol WHERE nombre = ?', ['admin']);
+        await pool.query(
+          'INSERT INTO usuarios (nombre, email, password, `id-rol`, estado, fecha_creacion) VALUES (?, ?, ?, ?, ?, NOW())',
+          ['Sandra Zapata', 'admin@sapposstore.com', 'admin123', adminRole[0].id_rol, 1]
+        );
+      }
+    }
+
     await ensurePlatformsTable();
   } catch (error) {
-    console.error('No se pudo inicializar la tabla de plataformas. Usando fallback local.', error);
+    console.error('No se pudo inicializar la base de datos. Usando fallback local.', error);
     dbAvailable = false;
   }
 

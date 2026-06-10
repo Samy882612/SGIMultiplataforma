@@ -1,36 +1,53 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Pencil, X, Save, Shield, UserCheck, UserX, Trash2 } from 'lucide-react';
+import { Plus, Pencil, X, Save, UserCheck, UserX, Trash2 } from 'lucide-react';
 import type { User } from '../types';
 
 const emptyUser: Omit<User, 'id' | 'createdAt'> = { name: '', email: '', password: '', role: 'employee', active: true };
 
 export default function Users() {
-  const { users, setUsers, currentUser } = useApp();
+  const { users, addUser, deleteUser, currentUser } = useApp();
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<User | null>(null);
   const [form, setForm] = useState<Omit<User, 'id' | 'createdAt'>>(emptyUser);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const openAdd = () => { setForm(emptyUser); setModal('add'); };
-  const openEdit = (u: User) => { setSelected(u); setForm({ name: u.name, email: u.email, password: u.password, role: u.role, active: u.active }); setModal('edit'); };
+  const openAdd = () => { setForm(emptyUser); setModal('add'); setError(''); };
+  const openEdit = (u: User) => { setSelected(u); setForm({ name: u.name, email: u.email, password: u.password, role: u.role, active: u.active }); setModal('edit'); setError(''); };
 
-  const handleSave = () => {
-    if (modal === 'add') {
-      const id = `U${String(users.length + 1).padStart(3, '0')}`;
-      setUsers(prev => [...prev, { id, ...form, createdAt: new Date().toISOString().split('T')[0] }]);
-    } else if (modal === 'edit' && selected) {
-      setUsers(prev => prev.map(u => u.id === selected.id ? { ...u, ...form } : u));
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      setError('Completa todos los campos');
+      return;
     }
-    setModal(null);
+
+    setLoading(true);
+    try {
+      if (modal === 'add') {
+        await addUser(form);
+      }
+      setModal(null);
+      setError('');
+    } catch (err) {
+      setError('Error al guardar usuario');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleActive = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, active: !u.active } : u));
-  };
-
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (id === currentUser.id) return;
-    setUsers(prev => prev.filter(u => u.id !== id));
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
+
+    setLoading(true);
+    try {
+      await deleteUser(id);
+    } catch (err) {
+      alert('Error al eliminar usuario');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -93,14 +110,11 @@ export default function Users() {
                 <td className="table-td">
                   {currentUser.role === 'admin' && (
                     <div className="flex gap-2">
-                      <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600">
+                      <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" disabled={loading}>
                         <Pencil size={15} />
                       </button>
-                      <button onClick={() => toggleActive(u.id)} className={`p-1.5 rounded-lg ${u.active ? 'hover:bg-red-50 text-red-500' : 'hover:bg-emerald-50 text-emerald-600'}`}>
-                        {u.active ? <UserX size={15} /> : <UserCheck size={15} />}
-                      </button>
                       {u.id !== currentUser.id && (
-                        <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500">
+                        <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" disabled={loading}>
                           <Trash2 size={15} />
                         </button>
                       )}
@@ -111,36 +125,6 @@ export default function Users() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="card border-l-4 border-blue-400">
-        <div className="flex items-center gap-2 mb-3">
-          <Shield size={18} className="text-blue-600" />
-          <h3 className="font-semibold text-slate-800">Permisos por Rol</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            {
-              role: 'Administrador', color: 'blue',
-              perms: ['Gestionar inventario completo', 'Configurar precios', 'Generar reportes estratégicos', 'Gestionar usuarios y roles', 'Conectar plataformas externas']
-            },
-            {
-              role: 'Empleado', color: 'emerald',
-              perms: ['Registrar ventas locales', 'Emitir recibos', 'Consultar inventario', 'Actualizar stock básico']
-            }
-          ].map(r => (
-            <div key={r.role} className={`bg-${r.color}-50 rounded-xl p-4`}>
-              <h4 className={`font-semibold text-${r.color}-700 mb-2`}>{r.role}</h4>
-              <ul className="space-y-1">
-                {r.perms.map((p, i) => (
-                  <li key={i} className={`text-sm text-${r.color}-600 flex items-center gap-2`}>
-                    <span className={`w-1.5 h-1.5 bg-${r.color}-500 rounded-full`} />{p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
       </div>
 
       {modal && (

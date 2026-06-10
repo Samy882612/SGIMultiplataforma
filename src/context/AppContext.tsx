@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Product, Sale, User, ActiveView, Invoice, TaxRate } from '../types';
 import { mockProducts, mockSales, mockUsers, mockInvoices, mockTaxRates } from '../data/mockData';
@@ -7,8 +7,9 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: React.Dispatch<React.SetStateAction<User>>;
   login: (id: string) => void;
-  authenticate: (email: string, password: string) => boolean;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>) => User;
+  authenticate: (email: string, password: string) => Promise<boolean>;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User>;
+  deleteUser: (id: string) => Promise<void>;
   logout: () => void;
   activeView: ActiveView;
   setActiveView: (v: ActiveView) => void;
@@ -55,23 +56,108 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const [taxRates, setTaxRates] = useState<TaxRate[]>(mockTaxRates);
 
+  // Cargar datos de la API al iniciar
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [productsRes, usersRes, taxRatesRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/users'),
+          fetch('/api/tax-rates'),
+        ]);
+
+        if (productsRes.ok) {
+          const productsData = await productsRes.json();
+          if (Array.isArray(productsData) && productsData.length > 0) {
+            setProducts(productsData);
+          }
+        }
+
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          if (Array.isArray(usersData) && usersData.length > 0) {
+            setUsers(usersData);
+            setCurrentUser(usersData[0]);
+          }
+        }
+
+        if (taxRatesRes.ok) {
+          const taxRatesData = await taxRatesRes.json();
+          if (Array.isArray(taxRatesData) && taxRatesData.length > 0) {
+            setTaxRates(taxRatesData);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data from API:', error);
+        // Mantener los mockData si la API no está disponible
+      }
+    };
+
+    loadData();
+  }, []);
+
   const login = (id: string) => {
     const nextUser = users.find(u => u.id === id);
     if (nextUser) setCurrentUser(nextUser);
   };
 
-  const authenticate = (email: string, password: string) => {
-    const nextUser = users.find(u => u.email === email && u.password === password);
-    if (!nextUser) return false;
-    setCurrentUser(nextUser);
-    return true;
+  const authenticate = async (email: string, password: string) => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) return false;
+      const user: User = await res.json();
+      setCurrentUser(user);
+      return true;
+    } catch (error) {
+      console.error('Authentication error:', error);
+      // Fallback a autenticación local
+      const nextUser = users.find(u => u.email === email && u.password === password);
+      if (!nextUser) return false;
+      setCurrentUser(nextUser);
+      return true;
+    }
   };
 
-  const addUser = (user: Omit<User, 'id' | 'createdAt'>) => {
-    const id = `U${String(users.length + 1).padStart(3, '0')}`;
-    const newUser: User = { id, ...user, createdAt: new Date().toISOString().split('T')[0] };
-    setUsers(prev => [...prev, newUser]);
-    return newUser;
+  const addUser = async (user: Omit<User, 'id' | 'createdAt'>) => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user),
+      });
+      if (!res.ok) throw new Error('Failed to create user');
+      const newUser: User = await res.json();
+      setUsers(prev => [...prev, newUser]);
+      return newUser;
+    } catch (error) {
+      console.error('Create user error:', error);
+      // Fallback: crear localmente
+      const id = `U${String(users.length + 1).padStart(3, '0')}`;
+      const newUser: User = { id, ...user, createdAt: new Date().toISOString().split('T')[0] };
+      setUsers(prev => [...prev, newUser]);
+      return newUser;
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-role': currentUser.role.toLowerCase(),
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error('Failed to delete user');
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (error) {
+      console.error('Delete user error:', error);
+      throw error;
+    }
   };
 
   const logout = () => setCurrentUser(guestUser);
@@ -178,7 +264,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AppContext.Provider value={{
-      currentUser, setCurrentUser, login, authenticate, addUser, logout, activeView, setActiveView,
+      currentUser, setCurrentUser, login, authenticate, addUser, deleteUser, logout, activeView, setActiveView,
       products, setProducts, createProduct, updateProduct, deleteProduct,
       sales, setSales, createSale,
       users, setUsers,

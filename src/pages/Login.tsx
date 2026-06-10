@@ -19,23 +19,27 @@ export default function Login() {
     setError('');
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('Ingresa correo y contraseña.');
       return;
     }
 
-    const authenticated = authenticate(email.trim(), password);
-    if (!authenticated) {
-      setError('Usuario no registrado o contraseña incorrecta.');
-      return;
-    }
+    try {
+      const authenticated = await authenticate(email.trim(), password);
+      if (!authenticated) {
+        setError('Usuario no registrado o contraseña incorrecta.');
+        return;
+      }
 
-    setError('');
-    setActiveView('dashboard');
+      setError('');
+      setActiveView('dashboard');
+    } catch (err) {
+      setError('Error al iniciar sesión. Intenta de nuevo.');
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Completa todos los campos para registrarte.');
       return;
@@ -47,17 +51,21 @@ export default function Login() {
       return;
     }
 
-    const registered = addUser({
-      name: name.trim(),
-      email: email.trim(),
-      password,
-      role,
-      active: true,
-    });
+    try {
+      const registered = await addUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role,
+        active: true,
+      });
 
-    login(registered.id);
-    setError('');
-    setActiveView('dashboard');
+      login(registered.id);
+      setError('');
+      setActiveView('dashboard');
+    } catch (err) {
+      setError('Error al registrar usuario. Intenta de nuevo.');
+    }
   };
 
   if (currentUser.id !== 'guest') {

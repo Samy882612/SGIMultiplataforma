@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart2,
-  Globe, Users, Network, LogOut, Store,
+  Globe, Users, LogOut, Store,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { ActiveView } from '../types';
@@ -13,7 +13,6 @@ const nav: { label: string; icon: React.ReactNode; view: ActiveView }[] = [
   { label: 'Reportes', icon: <BarChart2 size={20} />, view: 'reports' },
   { label: 'Plataformas', icon: <Globe size={20} />, view: 'platforms' },
   { label: 'Usuarios', icon: <Users size={20} />, view: 'users' },
-  { label: 'Arquitectura', icon: <Network size={20} />, view: 'architecture' },
 ];
 
 export default function Sidebar() {

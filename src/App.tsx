@@ -7,7 +7,6 @@ import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Platforms from './pages/Platforms';
 import Users from './pages/Users';
-import Architecture from './pages/Architecture';
 import Login from './pages/Login';
 
 function AppContent() {
@@ -19,7 +18,6 @@ function AppContent() {
     reports: <Reports />,
     platforms: <Platforms />,
     users: <Users />,
-    architecture: <Architecture />,
     login: <Login />,
   };
 
