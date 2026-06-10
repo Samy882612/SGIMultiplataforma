@@ -6,14 +6,14 @@ import type { User } from '../types';
 const emptyUser: Omit<User, 'id' | 'createdAt'> = { name: '', email: '', password: '', role: 'employee', active: true };
 
 export default function Users() {
-  const { users, addUser, deleteUser, currentUser } = useApp();
+  const { users, addUser, updateUser, deleteUser, currentUser } = useApp();
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<User | null>(null);
   const [form, setForm] = useState<Omit<User, 'id' | 'createdAt'>>(emptyUser);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const openAdd = () => { setForm(emptyUser); setModal('add'); setError(''); };
+  const openAdd = () => { setSelected(null); setForm(emptyUser); setModal('add'); setError(''); };
   const openEdit = (u: User) => { setSelected(u); setForm({ name: u.name, email: u.email, password: u.password, role: u.role, active: u.active }); setModal('edit'); setError(''); };
 
   const handleSave = async () => {
@@ -27,9 +27,10 @@ export default function Users() {
       if (modal === 'add') {
         await addUser(form);
       } else if (modal === 'edit' && selected) {
-        console.log('Editing user:', selected.id, form);
+        await updateUser(selected.id, form);
       }
       setModal(null);
+      setSelected(null);
       setError('');
     } catch (err) {
       setError('Error al guardar usuario');
@@ -162,6 +163,11 @@ export default function Users() {
                   <option value="admin">Administrador</option>
                 </select>
               </div>
+              {error && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3 mt-2">
+                  {error}
+                </div>
+              )}
             </div>
             <div className="flex gap-3 justify-end px-6 py-4 border-t border-slate-100">
               <button onClick={() => setModal(null)} className="btn-secondary"><X size={16} />Cancelar</button>
