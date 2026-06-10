@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Pencil, X, Save, UserCheck, UserX, Trash2 } from 'lucide-react';
+import { Plus, Pencil, X, Save, Trash2 } from 'lucide-react';
 import type { User } from '../types';
 
 const emptyUser: Omit<User, 'id' | 'createdAt'> = { name: '', email: '', password: '', role: 'employee', active: true };
@@ -26,6 +26,8 @@ export default function Users() {
     try {
       if (modal === 'add') {
         await addUser(form);
+      } else if (modal === 'edit' && selected) {
+        console.log('Editing user:', selected.id, form);
       }
       setModal(null);
       setError('');
@@ -135,7 +137,10 @@ export default function Users() {
               <button onClick={() => setModal(null)}><X size={18} /></button>
             </div>
             <div className="p-6 space-y-4">
-              {[
+                {error && (
+                  <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>
+                )}
+                {[
                 { label: 'Nombre completo', key: 'name', type: 'text' },
                 { label: 'Correo electrónico', key: 'email', type: 'email' },
                 { label: 'Contraseña', key: 'password', type: 'password' },
