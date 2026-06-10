@@ -27,7 +27,7 @@ export default function Users() {
       if (modal === 'add') {
         await addUser(form);
       } else if (modal === 'edit' && selected) {
-        console.log('Editing user:', selected.id, form);
+        await addUser({ ...form });
       }
       setModal(null);
       setError('');
