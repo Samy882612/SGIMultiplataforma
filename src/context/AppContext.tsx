@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { Product, Sale, User, ActiveView, Invoice, TaxRate } from '../types';
-import { mockProducts, mockSales, mockUsers, mockInvoices, mockTaxRates } from '../data/mockData';
+import type { Product, Sale, User, ActiveView, Invoice, TaxRate, Platform } from '../types';
+import { mockProducts, mockSales, mockUsers, mockInvoices, mockTaxRates, mockPlatforms } from '../data/mockData';
 
 interface AppContextType {
   currentUser: User;
@@ -19,6 +19,11 @@ interface AppContextType {
   createProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, product: Omit<Product, 'id'>) => Promise<Product>;
   deleteProduct: (id: string) => Promise<void>;
+  platforms: Platform[];
+  setPlatforms: React.Dispatch<React.SetStateAction<Platform[]>>;
+  createPlatform: (platform: Omit<Platform, 'id'>) => Promise<Platform>;
+  updatePlatform: (id: string, platform: Omit<Platform, 'id'>) => Promise<Platform>;
+  deletePlatform: (id: string) => Promise<void>;
   sales: Sale[];
   setSales: React.Dispatch<React.SetStateAction<Sale[]>>;
   createSale: (sale: { platform: Sale['platform']; products: Sale['products']; employeeId: string }) => Promise<Sale>;
@@ -52,6 +57,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [platforms, setPlatforms] = useState<Platform[]>(mockPlatforms);
   const [sales, setSales] = useState<Sale[]>(mockSales);
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
@@ -86,6 +92,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           const taxRatesData = await taxRatesRes.json();
           if (Array.isArray(taxRatesData) && taxRatesData.length > 0) {
             setTaxRates(taxRatesData);
+          }
+        }
+
+        const platformsRes = await fetch('/api/platforms');
+        if (platformsRes.ok) {
+          const platformsData = await platformsRes.json();
+          if (Array.isArray(platformsData) && platformsData.length > 0) {
+            setPlatforms(platformsData);
           }
         }
       } catch (error) {
@@ -245,16 +259,101 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const createPlatform = async (platform: Omit<Platform, 'id'>) => {
+    try {
+      const res = await fetch('/api/platforms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(platform),
+      });
+      if (!res.ok) throw new Error('Failed to create platform');
+      const newPlatform: Platform = await res.json();
+      setPlatforms(prev => [...prev, newPlatform]);
+      return newPlatform;
+    } catch (error) {
+      console.error('Create platform error:', error);
+      const nextId = platforms
+        .map(p => Number(p.id.replace(/^PL/, '')))
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a)[0] || 0;
+      const newPlatform: Platform = {
+        id: `PL${String(nextId + 1).padStart(3, '0')}`,
+        ...platform,
+      };
+      setPlatforms(prev => [...prev, newPlatform]);
+      return newPlatform;
+    }
+  };
+
+  const updatePlatform = async (id: string, platform: Omit<Platform, 'id'>) => {
+    try {
+      const res = await fetch(`/api/platforms/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(platform),
+      });
+      if (!res.ok) throw new Error('Failed to update platform');
+      const updatedPlatform: Platform = await res.json();
+      setPlatforms(prev => prev.map(p => p.id === id ? updatedPlatform : p));
+      return updatedPlatform;
+    } catch (error) {
+      console.error('Update platform error:', error);
+      const updatedPlatform: Platform = { id, ...platform };
+      setPlatforms(prev => prev.map(p => p.id === id ? updatedPlatform : p));
+      return updatedPlatform;
+    }
+  };
+
+  const deletePlatform = async (id: string) => {
+    try {
+      const res = await fetch(`/api/platforms/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete platform');
+      setPlatforms(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Delete platform error:', error);
+      setPlatforms(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
   const createSale = async (sale: { platform: Sale['platform']; products: Sale['products']; employeeId: string }) => {
-    const res = await fetch('/api/sales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sale),
-    });
-    if (!res.ok) throw new Error('Failed to create sale');
-    const newSale: Sale = await res.json();
-    setSales(prev => [...prev, newSale]);
-    return newSale;
+    try {
+      const res = await fetch('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sale),
+      });
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => '');
+        throw new Error(`Failed to create sale: ${res.status} ${errorBody}`);
+      }
+      const newSale: Sale = await res.json();
+      setSales(prev => [...prev, newSale]);
+      return newSale;
+    } catch (error) {
+      console.error('Create sale error:', error);
+      const nextSaleNumber = sales
+        .map(s => Number(s.id.replace(/^V/, '')))
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a)[0] || 0;
+      const newId = `V${String(nextSaleNumber + 1).padStart(3, '0')}`;
+      const newSale: Sale = {
+        id: newId,
+        date: new Date().toISOString().split('T')[0],
+        products: sale.products,
+        total: sale.products.reduce((sum, item) => sum + item.subtotal, 0),
+        platform: sale.platform,
+        status: 'completed',
+        receiptNumber: `REC-${String(nextSaleNumber + 1).padStart(3, '0')}`,
+        employeeId: sale.employeeId,
+      };
+      setSales(prev => [...prev, newSale]);
+      setProducts(prev => prev.map(product => {
+        const saleItem = sale.products.find(item => item.productId === product.id);
+        if (!saleItem) return product;
+        return { ...product, quantity: product.quantity - saleItem.quantity };
+      }));
+      return newSale;
+    }
   };
 
   const createInvoice = async (invoice: Invoice) => {

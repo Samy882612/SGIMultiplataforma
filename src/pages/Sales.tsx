@@ -32,7 +32,10 @@ export default function Sales() {
         return { productId: p.id, productName: p.name, quantity: it.quantity, unitPrice: p.price, subtotal: p.price * it.quantity };
       });
 
-    if (!saleItems.length) return;
+    if (!saleItems.length) {
+      alert('Debe seleccionar al menos un producto con cantidad mayor a cero.');
+      return;
+    }
 
     try {
       const newSale = await createSale({ platform, products: saleItems, employeeId: currentUser.id });
@@ -41,7 +44,7 @@ export default function Sales() {
       setItems([{ productId: '', quantity: 1 }]);
     } catch (error) {
       console.error(error);
-      alert('No se pudo registrar la venta.');
+      alert('No se pudo registrar la venta. Intente de nuevo.');
     }
   };
 

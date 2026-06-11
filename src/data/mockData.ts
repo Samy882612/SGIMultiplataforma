@@ -7,6 +7,12 @@ export const mockTaxRates: TaxRate[] = [
   { id: 'T004', name: 'IVA 12%', rate: 12, description: 'Tarifa especial por categoría', active: false },
 ];
 
+export const mockPlatforms: Platform[] = [
+  { id: 'PL001', name: 'MercadoLibre', logo: 'ML', apiKey: 'ml-demo-key', status: 'connected', lastSync: '2024-06-03 10:32', products: 45, sales: 128, color: 'bg-yellow-400' },
+  { id: 'PL002', name: 'Falabella', logo: 'FA', apiKey: 'fb-demo-key', status: 'connected', lastSync: '2024-06-03 09:15', products: 32, sales: 67, color: 'bg-green-500' },
+  { id: 'PL003', name: 'Amazon', logo: 'AZ', apiKey: 'az-demo-key', status: 'disconnected', lastSync: 'N/A', products: 0, sales: 0, color: 'bg-orange-500' },
+];
+
 export const mockInvoices: Invoice[] = [
   {
     id: 'INV001', number: 'FAC-2024-001', date: '2024-06-01', dueDate: '2024-06-16',

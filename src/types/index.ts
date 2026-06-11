@@ -28,6 +28,18 @@ export interface SaleItem {
   subtotal: number;
 }
 
+export interface Platform {
+  id: string;
+  name: string;
+  logo: string;
+  apiKey: string;
+  status: 'connected' | 'disconnected' | 'syncing';
+  lastSync: string;
+  products: number;
+  sales: number;
+  color: string;
+}
+
 export interface User {
   id: string;
   name: string;
