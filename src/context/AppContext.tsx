@@ -66,6 +66,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Cargar datos de la API al iniciar
   useEffect(() => {
     const loadData = async () => {
+      // Intentar cargar desde localStorage primero (persistencia local)
+      try {
+        const storedUsers = localStorage.getItem('users');
+        if (storedUsers) {
+          const parsed = JSON.parse(storedUsers);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUsers(parsed);
+            setCurrentUser(parsed[0]);
+          }
+        }
+        const storedProducts = localStorage.getItem('products');
+        if (storedProducts) {
+          const parsedP = JSON.parse(storedProducts);
+          if (Array.isArray(parsedP) && parsedP.length > 0) setProducts(parsedP);
+        }
+      } catch (e) {
+        // ignore localStorage parse errors
+      }
       try {
         const [productsRes, usersRes, taxRatesRes] = await Promise.all([
           fetch('/api/products'),
@@ -110,6 +128,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     loadData();
   }, []);
+
+  // Persistir cambios locales en localStorage para users y products
+  useEffect(() => {
+    try {
+      localStorage.setItem('users', JSON.stringify(users));
+    } catch (e) {
+      console.error('Failed to persist users to localStorage', e);
+    }
+  }, [users]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('products', JSON.stringify(products));
+    } catch (e) {
+      console.error('Failed to persist products to localStorage', e);
+    }
+  }, [products]);
 
   const login = (id: string) => {
     const nextUser = users.find(u => u.id === id);

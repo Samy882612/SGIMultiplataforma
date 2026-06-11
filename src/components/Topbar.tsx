@@ -12,7 +12,7 @@ const viewTitles: Record<string, string> = {
 };
 
 export default function Topbar() {
-  const { activeView, products, sales } = useApp();
+  const { activeView, products, sales, currentUser } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -41,9 +41,14 @@ export default function Topbar() {
     setShowSearchResults(value.trim().length > 0);
   };
 
+  const baseTitle = viewTitles[activeView] ?? '';
+  const title = currentUser && currentUser.role && currentUser.role.toLowerCase() === 'admin'
+    ? `Administración — ${baseTitle}`
+    : baseTitle;
+
   return (
     <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
-      <h1 className="text-xl font-bold text-slate-800">{viewTitles[activeView]}</h1>
+      <h1 className="text-xl font-bold text-slate-800">{title}</h1>
       <div className="flex items-center gap-4">
         <div className="relative" onClick={e => e.stopPropagation()}>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
