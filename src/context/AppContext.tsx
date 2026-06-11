@@ -81,6 +81,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           const parsedP = JSON.parse(storedProducts);
           if (Array.isArray(parsedP) && parsedP.length > 0) setProducts(parsedP);
         }
+        const storedPlatforms = localStorage.getItem('platforms');
+        if (storedPlatforms) {
+          const parsedPl = JSON.parse(storedPlatforms);
+          if (Array.isArray(parsedPl) && parsedPl.length > 0) setPlatforms(parsedPl);
+        }
       } catch (e) {
         // ignore localStorage parse errors
       }
@@ -145,6 +150,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.error('Failed to persist products to localStorage', e);
     }
   }, [products]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('platforms', JSON.stringify(platforms));
+    } catch (e) {
+      console.error('Failed to persist platforms to localStorage', e);
+    }
+  }, [platforms]);
 
   const login = (id: string) => {
     const nextUser = users.find(u => u.id === id);
